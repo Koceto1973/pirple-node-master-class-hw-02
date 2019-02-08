@@ -71,21 +71,21 @@ handlers._users.post = function(data,callback){ // callback(200)
 
 };
 
-// Required data: phone, token
+// Required data: email, token
 // Optional data: none
 // should post token first, then get is responsable
 handlers._users.get = function(data,callback){ // callback(200, userdata without hashed password )
-  // Check that phone number is valid string of lenght 10
-  var phone = typeof(data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length == 10 ? data.queryStringObject.phone.trim() : false;
-  if(phone){
+  // Check that email is valid string
+  var email = typeof(data.queryStringObject.email) == 'string' ? data.queryStringObject.email.trim() : false;
+  if(email){
 
     // Get token from headers
     var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
     // Verify that the given token is valid for the phone number
-    handlers._tokens.verifyToken(token,phone,function(tokenIsValid){ // true or false
+    handlers._tokens.verifyToken(token,email,function(tokenIsValid){ // true or false
       if(tokenIsValid){
         // Lookup the user
-        _data.read('users',phone,function(err,data){
+        _data.read('users',email,function(err,data){
           if(!err && data){
             // Remove the hashed password from the user object (just not to be shown in response) before returning it to the requester
             delete data.hashedPassword;
@@ -103,44 +103,44 @@ handlers._users.get = function(data,callback){ // callback(200, userdata without
   }
 };
 
-// Required data: phone, token
-// Optional data: firstName, lastName, password (at least one must be specified)
+// Required data: email, token
+// Optional data: name, address, password (at least one must be specified)
 handlers._users.put = function(data,callback){ // callback(200)
   // Check for required field
-  var phone = typeof(data.payload.phone) == 'string' && data.payload.phone.trim().length == 10 ? data.payload.phone.trim() : false;
+  var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
 
   // Check for optional fields
-  var firstName = typeof(data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
-  var lastName = typeof(data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
+  var name = typeof(data.payload.name) == 'string' && data.payload.name.trim().length > 0 ? data.payload.name.trim() : false;
+  var address = typeof(data.payload.address) == 'string' && data.payload.address.trim().length > 0 ? data.payload.address.trim() : false;
   var password = typeof(data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
 
   // Error if phone is invalid
-  if(phone){
+  if(email){
     // Error if nothing is sent to update
-    if(firstName || lastName || password){
+    if(name || address || password){
 
       // Get token from headers
       var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
 
       // Verify that the given token is valid for the phone number
-      handlers._tokens.verifyToken(token,phone,function(tokenIsValid){
+      handlers._tokens.verifyToken(token,email,function(tokenIsValid){
         if(tokenIsValid){
 
           // Lookup the user
-          _data.read('users',phone,function(err,userData){
+          _data.read('users',email,function(err,userData){
             if(!err && userData){
               // Update the fields if necessary
-              if(firstName){
-                userData.firstName = firstName;
+              if(name){
+                userData.name = name;
               }
-              if(lastName){
-                userData.lastName = lastName;
+              if(address){
+                userData.address = address;
               }
               if(password){
                 userData.hashedPassword = helpers.hash(password);
               }
               // Store the new updates
-              _data.update('users',phone,userData,function(err){
+              _data.update('users',email,userData,function(err){
                 if(!err){
                   callback(200);
                 } else {
@@ -161,43 +161,42 @@ handlers._users.put = function(data,callback){ // callback(200)
   } else {
     callback(400,{'Error' : 'Missing required field.'});
   }
-
 };
 
-// Required data: phone, token
-// also Cleanup old checks associated with the user
+// Required data: email, token
+// also Cleanup old orders associated with the user
 handlers._users.delete = function(data,callback){
-  // Check that phone number is valid
-  var phone = typeof(data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length == 9 ? data.queryStringObject.phone.trim() : false;
-  if(phone){
+  // Check that email number is valid
+  var email = typeof(data.queryStringObject.email) == 'string' ? data.queryStringObject.email.trim() : false;
+  if(email){
 
     // Get token from headers
     var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
 
     // Verify that the given token is valid for the phone number
-    handlers._tokens.verifyToken(token,phone,function(tokenIsValid){
+    handlers._tokens.verifyToken(token,email,function(tokenIsValid){
       if(tokenIsValid){
         // Lookup the user
-        _data.read('users',phone,function(err,userData){
+        _data.read('users',email,function(err,userData){
           if(!err && userData){
             // Delete the user's data
-            _data.delete('users',phone,function(err){
+            _data.delete('users',email,function(err){
               if(!err){
-                // Delete each of the checks associated with the user
-                var userChecks = typeof(userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
-                var checksToDelete = userChecks.length;
-                if(checksToDelete > 0){
-                  var checksDeleted = 0;
+                // Delete each of the orders associated with the user
+                var userOrders = typeof(userData.orders) == 'object' && userData.orders instanceof Array ? userData.orders : [];
+                var ordersToDelete = userOrders.length;
+                if(ordersToDelete > 0){
+                  var ordersDeleted = 0;
                   var deletionErrors = false;
-                  // Loop through the checks
-                  userChecks.forEach(function(checkId){
-                    // Delete the check
-                    _data.delete('checks',checkId,function(err){
+                  // Loop through the orders
+                  userOrders.forEach(function(orderId){
+                    // Delete the order
+                    _data.delete('orders',orderId,function(err){
                       if(err){
                         deletionErrors = true;
                       }
-                      checksDeleted++;
-                      if(checksDeleted == checksToDelete){
+                      ordersDeleted++;
+                      if(ordersDeleted == ordersToDelete){
                         if(!deletionErrors){
                           callback(200);
                         } else {
