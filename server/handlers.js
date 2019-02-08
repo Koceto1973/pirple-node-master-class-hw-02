@@ -61,7 +61,7 @@ handlers._users.post = function(data,callback){ // callback(200)
 
       } else {
         // User alread exists
-        callback(400,{'Error' : 'A user with that phone number already exists'});
+        callback(400,{'Error' : 'A user with that email number already exists'});
       }
     });
 
@@ -121,8 +121,8 @@ handlers._users.put = function(data,callback){ // callback(200)
 
       // Get token from headers
       var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
-
-      // Verify that the given token is valid for the phone number
+      
+      // Verify that the given token is valid for the email
       handlers._tokens.verifyToken(token,email,function(tokenIsValid){
         if(tokenIsValid){
 
@@ -200,7 +200,7 @@ handlers._users.delete = function(data,callback){
                         if(!deletionErrors){
                           callback(200);
                         } else {
-                          callback(500,{'Error' : "Errors encountered while attempting to delete all of the user's checks. All checks may not have been deleted from the system successfully."})
+                          callback(500,{'Error' : "Errors encountered while attempting to delete all of the user's orders. All orders may not have been deleted from the system successfully."})
                         }
                       }
                     });
@@ -239,14 +239,14 @@ handlers.tokens = function(data,callback){ // from data.method desides which of 
 handlers._tokens  = {};
 
 // Tokens - post
-// Required data: phone, password
+// Required data: email, password
 // Optional data: none
 handlers._tokens.post = function(data,callback){ // callback(200,tokenObject);
-  var phone = typeof(data.payload.phone) == 'string' && data.payload.phone.trim().length == 9 ? data.payload.phone.trim() : false;
+  var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
   var password = typeof(data.payload.password) == 'string' && data.payload.password.trim().length > 0 ? data.payload.password.trim() : false;
-  if(phone && password){
-    // Lookup the user who matches that phone number
-    _data.read('users',phone,function(err,userData){
+  if(email && password){
+    // Lookup the user who matches that email
+    _data.read('users',email,function(err,userData){
       if(!err && userData){
         // Hash the sent password, and compare it to the password stored in the user object
         var hashedPassword = helpers.hash(password);
@@ -255,7 +255,7 @@ handlers._tokens.post = function(data,callback){ // callback(200,tokenObject);
           var tokenId = helpers.createRandomString(20);
           var expires = Date.now() + 1000 * 60 * 60;
           var tokenObject = {
-            'phone' : phone,
+            'email' : email,
             'id' : tokenId,
             'expires' : expires
           };
@@ -362,12 +362,12 @@ handlers._tokens.delete = function(data,callback){ // callback(200)
 };
 
 // Verify if a given token id is currently valid for a given user
-handlers._tokens.verifyToken = function(id,phone,callback){ // callback(true)
+handlers._tokens.verifyToken = function(id,email,callback){ // callback(true)
   // Lookup the token
   _data.read('tokens',id,function(err,tokenData){
     if(!err && tokenData){
       // Check that the token is for the given user and has not expired
-      if(tokenData.phone == phone && tokenData.expires > Date.now()){
+      if(tokenData.email == email && tokenData.expires > Date.now()){
         callback(true);
       } else {
         callback(false);
