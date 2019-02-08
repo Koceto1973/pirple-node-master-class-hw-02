@@ -12,6 +12,7 @@ var debug = util.debuglog('server');
 // local dependencies
 var config = require('./config');
 var handlers = require('./handlers');
+var helpers = require('./helpers');
 
 // Instantiate the server module object
 var server = {};
@@ -95,7 +96,9 @@ server.unifiedServer = function(req,res){
 
 // Define the request router
 server.router = {
-  
+  "users": handlers.users,
+  "tokens": handlers.tokens,
+  "orders": handlers.orders
 };
 
 // Init script

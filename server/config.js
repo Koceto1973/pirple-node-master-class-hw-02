@@ -1,5 +1,8 @@
 // Create and export configuration variables
 
+// Dependances
+const cnfg = require('./config.json');
+
 // Container for all environments
 var environments = {};
 
@@ -7,7 +10,7 @@ var environments = {};
 environments.staging = {
   'httpsPort' : 3001,
   'envName' : 'staging',
-  'hashingSecret' : 'thisIsASecret',
+  'hashingSecret' : cnfg.hashingSecret,
   'maxChecks' : 5,
 };
 
