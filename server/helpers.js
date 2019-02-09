@@ -49,8 +49,26 @@ helpers.createRandomString = function(strLength){
   }
 };
 
-helpers.verifyOrder = function(menu,order){
-  return true;
+// verify pizza order
+// at least one
+// max five per model
+// max twenty total
+helpers.verifyOrder = function(menuObject,order){
+  let count = 0;
+  let acceptable = true;
+  Array.prototype.forEach.call(order, (item)=>{
+    if( item<0 || item>5 ) { acceptable = false; }
+    count +=item;
+
+    console.log(item);
+  });
+
+  // at least one and max twenty
+  if( count>0 && count<21 && acceptable) {
+    return true;
+  } else {
+    return false;
+  }  
 }
 
 // Export the module

@@ -446,7 +446,7 @@ handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
           _data.read('menu','menu',function(err,menuObject){
           // check if menu is fetched ok
           if(!err&&menuObject){
-            const order = typeof(data.payload.order) == 'object' ? data.payload.order : false;
+            const order = typeof(data.payload.order) == 'object' && data.payload.order instanceof Array ? data.payload.order : false;
             // check if order is fetched ok
             if(order){
               // check order vs menu
