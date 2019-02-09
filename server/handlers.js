@@ -378,26 +378,25 @@ handlers._tokens.verifyToken = function(id,email,callback){ // callback(true)
   });
 };
 
-// Checks
-handlers.checks = function(data,callback){
-  var acceptableMethods = ['post','get','put','delete'];
+// Orders
+handlers.orders = function(data,callback){
+  var acceptableMethods = ['get'];
   if(acceptableMethods.indexOf(data.method) > -1){
-    handlers._checks[data.method](data,callback);
+    handlers._orders[data.method](data,callback);
   } else {
     callback(405);
   }
 };
 
-// Container for all the checks methods
-handlers._checks  = {};
+// Container for all the orders methods
+handlers._orders  = {};
 
-
-// Checks - post
-// Required data: user token, protocol,url,method,successCodes,timeoutSeconds
+// Orders - post
+// Required data: model,quantity,price
 // Optional data: none
-handlers._checks.post = function(data,callback){ // callback(200,checkObject)
+handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
   // Validate inputs
-  var protocol = typeof(data.payload.protocol) == 'string' && ['https','http'].indexOf(data.payload.protocol) > -1 ? data.payload.protocol : false;
+  var model = typeof(data.payload.model) == 'string' && ['https','http'].indexOf(data.payload.protocol) > -1 ? data.payload.protocol : false;
   var url = typeof(data.payload.url) == 'string' && data.payload.url.trim().length > 0 ? data.payload.url.trim() : false;
   var method = typeof(data.payload.method) == 'string' && ['post','get','put','delete'].indexOf(data.payload.method) > -1 ? data.payload.method : false;
   var successCodes = typeof(data.payload.successCodes) == 'object' && data.payload.successCodes instanceof Array && data.payload.successCodes.length > 0 ? data.payload.successCodes : false;
@@ -476,42 +475,38 @@ handlers._checks.post = function(data,callback){ // callback(200,checkObject)
   }
 };
 
-// Checks - get
-// Required data: id of the check, user token
+// Orders - get
+// Required data: user token
 // Optional data: none
-handlers._checks.get = function(data,callback){ // callback(200,checkData)
-  // Check that id is valid
-  var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
-  console.log(data.queryStringObject.id);
-  if(id){
-    // Lookup the check
-    _data.read('checks',id,function(err,checkData){
-      if(!err && checkData){
-        // Get the token that sent the request
-        var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
-        // Verify that the given token is valid and belongs to the user who created the check
-        console.log("This is check data",checkData);
-        handlers._tokens.verifyToken(token,checkData.userPhone,function(tokenIsValid){
-          if(tokenIsValid){
-            // Return check data
-            callback(200,checkData);
+handlers._orders.get = function(data,callback){ // callback(200,menuData)
+  // Check that user token and email are provided
+  var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+  var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
+  if(token&&email){
+    // check that the token is issued to the user requesting the menu
+    handlers._tokens.verifyToken(token,email,function(tokenIsValid){
+      if(tokenIsValid){
+        // Lookup and provide the menu to requester
+        _data.read('orders','menu',function(err,menuData){
+          if(!err&&menuData){
+            callback(200,menuData);
           } else {
-            callback(403);
+            callback(404,{'Error' : 'Menu not found'});
           }
         });
       } else {
-        callback(404);
+        callback(403,{'Error' : 'Email/ token missmatch'});
       }
     });
   } else {
-    callback(400,{'Error' : 'Missing required field, or field invalid'})
+    callback(400,{'Error' : 'Missing or invalid required data - email and token'});
   }
 };
 
 // Checks - put
 // Required data: id of the check, user token
 // Optional data: protocol,url,method,successCodes,timeoutSeconds (one must be sent)
-handlers._checks.put = function(data,callback){ // callback(200)
+handlers._orders.put = function(data,callback){ // callback(200)
   // Check for required field
   var id = typeof(data.payload.id) == 'string' && data.payload.id.trim().length == 20 ? data.payload.id.trim() : false;
 
@@ -578,7 +573,7 @@ handlers._checks.put = function(data,callback){ // callback(200)
 // Checks - delete
 // Required data: id of the check and user token
 // Optional data: none
-handlers._checks.delete = function(data,callback){ // callback(200)
+handlers._orders.delete = function(data,callback){ // callback(200)
   // Check that id is valid
   var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
   if(id){

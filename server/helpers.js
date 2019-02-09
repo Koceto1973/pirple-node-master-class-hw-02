@@ -3,8 +3,6 @@
 // Dependencies
 var config = require('./config');
 var crypto = require('crypto');
-// var https = require('https');
-// var querystring = require('querystring');
 
 // Container for all the helpers
 var helpers = {};
