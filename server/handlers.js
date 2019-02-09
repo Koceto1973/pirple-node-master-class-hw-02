@@ -378,9 +378,50 @@ handlers._tokens.verifyToken = function(id,email,callback){ // callback(true)
   });
 };
 
+// Menu
+handlers.menu = function(data,callback){
+  var acceptableMethods = ['get'];
+  if(acceptableMethods.indexOf(data.method) > -1){
+    handlers._menu[data.method](data,callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for all the orders methods
+handlers._menu = {};
+
+// Menu - get
+// Required data: email, user token
+// Optional data: none
+handlers._menu.get = function(data,callback){ // callback(200,menuData)
+  // Check that user token and email are provided
+  var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+  var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
+  if(token&&email){
+    // check that the token is issued to the user requesting the menu
+    handlers._tokens.verifyToken(token,email,function(tokenIsValid){
+      if(tokenIsValid){
+        // Lookup and provide the menu to requester
+        _data.read('menu','menu',function(err,menuData){
+          if(!err&&menuData){
+            callback(200,menuData);
+          } else {
+            callback(404,{'Error' : 'Menu not found'});
+          }
+        });
+      } else {
+        callback(403,{'Error' : 'Email/ token missmatch'});
+      }
+    });
+  } else {
+    callback(400,{'Error' : 'Missing or invalid required data - email and token'});
+  }
+};
+
 // Orders
 handlers.orders = function(data,callback){
-  var acceptableMethods = ['get'];
+  var acceptableMethods = ['post','get','put','delete'];
   if(acceptableMethods.indexOf(data.method) > -1){
     handlers._orders[data.method](data,callback);
   } else {
@@ -389,7 +430,7 @@ handlers.orders = function(data,callback){
 };
 
 // Container for all the orders methods
-handlers._orders  = {};
+handlers._orders = {};
 
 // Orders - post
 // Required data: model,quantity,price
@@ -475,7 +516,7 @@ handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
   }
 };
 
-// Orders - get
+// Menu - get
 // Required data: user token
 // Optional data: none
 handlers._orders.get = function(data,callback){ // callback(200,menuData)

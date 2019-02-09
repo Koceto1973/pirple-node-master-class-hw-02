@@ -98,6 +98,7 @@ server.unifiedServer = function(req,res){
 server.router = {
   "users": handlers.users,
   "tokens": handlers.tokens,
+  "menu": handlers.menu,
   "orders": handlers.orders
 };
 
