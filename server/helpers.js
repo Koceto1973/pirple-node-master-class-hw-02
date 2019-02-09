@@ -49,5 +49,9 @@ helpers.createRandomString = function(strLength){
   }
 };
 
+helpers.verifyOrder = function(menu,order){
+  return true;
+}
+
 // Export the module
 module.exports = helpers;
