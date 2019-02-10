@@ -397,7 +397,7 @@ handlers._menu = {};
 handlers._menu.get = function(data,callback){ // callback(200,menuData)
   // Check that user token and email are provided
   var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
-  var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
+  var email = typeof(data.headers.email) == 'string' ? data.headers.email.trim() : false;
   if(token&&email){
     // check that the token is issued to the user requesting the menu
     handlers._tokens.verifyToken(token,email,function(tokenIsValid){
@@ -468,7 +468,7 @@ handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
                 // update the user data
                 _data.update('users',email,userData,function(err){
                   if(!err){
-                    callback(200);
+                    callback(200,{'orderId':orderId});
                   } else {
                     callback(500,{'Error' : 'Failed to update user data'});
                   }
@@ -490,14 +490,14 @@ handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
    }
 };
 
-// Orders - get
+// Orders - get 
 // Required data: user email and token
-// Optional data: none
+// Optional data: orderId ( all orders are fetched if not provided )
 handlers._orders.get = function(data,callback){ // callback(200,menuData)
    // Check that user token and email are provided
    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
-   var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
-   
+   var email = typeof(data.headers.email) == 'string' ? data.headers.email.trim() : false;
+   var order = typeof(data.headers.order) == 'string' ? data.headers.order.trim() : false;
    // verify required details
    if(token && email){
      // check that the token is issued to the user requesting his orders
@@ -511,33 +511,51 @@ handlers._orders.get = function(data,callback){ // callback(200,menuData)
             var counter = 0;
             var errorIter = false;
             // iterate over orders to fill the container with data
-            if (!userData.orders){
+            if (!userData.orders){ // user has not posted any orders
               callback(200,[]);
-            } else {
-              Array.prototype.forEach.call(userData.orders,(el)=>{
-                // get each order details
-                _data.read('orders',el,function(err,orderData){
-                  if(!err&&orderData){
-                    var currentOrder = {};
-                    currentOrder.id = orderData.id;
-                    currentOrder.order = orderData.order;
-                    currentOrder.status = orderData.status;
-                    userOrders.push(currentOrder);
+            } else { // user has posted some orders
+              if(order){
+                if(!userData.orders){
+                  callback(404,{'Error' : 'User has not posted any orders yet'});
+                } else {
+                  if(userData.orders.indexOf(order)>-1){
+                    _data.read('orders',order,function(err,orderData){
+                      if(!err&&orderData){
+                        callback(200,orderData);
+                      } else {
+                        callback(404,{'Error' : 'Failed to fetch the order'});
+                      }
+                    });
                   } else {
-                    errorIter = true;
+                    callback(404,{'Error' : 'User has not posted that order'});
                   }
-                  counter++;
-  
-                  // build response on successful read
-                  if(counter === userData.orders.length){
-                    if(!errorIter){
-                      callback(200,userOrders);
+                }
+              } else { // orderId missing in the headers or badly formatted
+                Array.prototype.forEach.call(userData.orders,(el)=>{
+                  // get each order details
+                  _data.read('orders',el,function(err,orderData){
+                    if(!err&&orderData){
+                      var currentOrder = {};
+                      currentOrder.id = orderData.id;
+                      currentOrder.order = orderData.order;
+                      currentOrder.status = orderData.status;
+                      userOrders.push(currentOrder);
                     } else {
-                      callback(500,{'Error' : 'Failed to collect users orders'});
+                      errorIter = true;
                     }
-                  }
+                    counter++;
+    
+                    // build response on successful read
+                    if(counter === userData.orders.length){
+                      if(!errorIter){
+                        callback(200,userOrders);
+                      } else {
+                        callback(500,{'Error' : 'Failed to collect users orders'});
+                      }
+                    }
+                  });
                 });
-              });
+              }
             }
           } else {
             callback(404,{'Error' : 'Failed to fetch user data'});
