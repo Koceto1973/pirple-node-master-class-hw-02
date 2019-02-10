@@ -628,26 +628,60 @@ handlers._orders.put = function(data,callback){ // callback(200)
    }
 };
 
-// Orders - delete
+// Orders - delete, if status is either 'accepted' or 'updated'
 // Required data: user email and token, order id
 // Optional data: none
 handlers._orders.delete = function(data,callback){ // callback(200)
-   // Check that user token and email are provided
-   var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
-   var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
-   if(token&&email){
-     // check that the token is issued to the user requesting the menu
-     handlers._tokens.verifyToken(token,email,function(tokenIsValid){
-       if(tokenIsValid){
-         // ...
-         
-       } else {
-         callback(403,{'Error' : 'Email/ token missmatch'});
-       }
-     });
-   } else {
-     callback(400,{'Error' : 'Missing or invalid required data - email and token'});
-   }
+  // Check that user token and email are provided
+  var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+  var email = typeof(data.headers.email) == 'string' ? data.headers.email.trim() : false;
+  var orderId = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
+    
+  if(token&&email&&orderId){
+    // check that the token is issued to the user requesting the amend
+    handlers._tokens.verifyToken(token,email,function(tokenIsValid){
+      if(tokenIsValid){
+        // check that the order is posted by the user requesting the deletion
+        _data.read('users',email,function(err,userData){
+          if(!err&&userData&&userData.orders&&(userData.orders instanceof Array)&&(userData.orders.indexOf(orderId)>-1)){
+            // check the status of the order
+            _data.read('orders',orderId,function(err,orderData){
+              if(!err&&orderData){
+               if(orderData.status==='accepted' || orderData.status==='updated'){
+                 // delete the order
+                 _data.delete('orders',orderId,function(err){
+                   if(!err){
+                    userData.orders.splice(userData.orders.indexOf(orderId),1);
+                    // Re-save the user's data
+                    _data.update('users',email,userData,function(err){
+                      if(!err){
+                        callback(200);
+                      } else {
+                        callback(500,{'Error' : 'Could not update the user.'});
+                      }
+                    });
+                   } else {
+                     callback(500,{'Error' : 'Failed to delete order'});
+                   }
+                 });
+               } else {
+                 callback(403,{'Error' : 'Order is not amendable'});
+               }
+              } else {
+                callback(404,{'Error' : 'Failed to fetch order data'})
+              }
+            });
+          } else {
+           callback(404,{'Error' : 'User/ order missmatch'});
+          }
+        });
+      } else {
+        callback(403,{'Error' : 'Email/ token missmatch'});
+      }
+    });
+  } else {
+    callback(400,{'Error' : 'Missing or invalid required data - email,token,order id and order amended'});
+  }
 };
 
 // Export the handlers
