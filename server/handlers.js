@@ -433,9 +433,9 @@ handlers.orders = function(data,callback){
 handlers._orders = {};
 
 // Orders - post
-// Required data: email, token,quantity per each model
+// Required data: email, token, quantity per each model
 // Optional data: none
-handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
+handlers._orders.post = function(data,callback){ // callback(200,orderId)
    // Check that user token and email are provided
    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
    var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
@@ -493,7 +493,7 @@ handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
 // Orders - get 
 // Required data: user email and token
 // Optional data: orderId ( all orders are fetched if not provided )
-handlers._orders.get = function(data,callback){ // callback(200,menuData)
+handlers._orders.get = function(data,callback){ // callback(200,orderDatas)
    // Check that user token and email are provided
    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
    var email = typeof(data.headers.email) == 'string' ? data.headers.email.trim() : false;
@@ -570,25 +570,61 @@ handlers._orders.get = function(data,callback){ // callback(200,menuData)
    }
 };
 
-// Orders - put
-// Required data: user email and token, order id, order content amended
+// Orders - put, if requested within 5min from ordering and only once
+// Required data: user email and token, order id, amended quantity per each model
 // Optional data: none
 handlers._orders.put = function(data,callback){ // callback(200)
    // Check that user token and email are provided
    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+   var orderId = typeof(data.headers.order) == 'string' ? data.headers.order.trim() : false;
    var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
-   if(token&&email){
-     // check that the token is issued to the user requesting the menu
+   var order = typeof(data.payload.order) == 'object' && data.payload.order instanceof Array && data.payload.order.length>0 ? data.payload.order : false;
+   
+   if(token&&email&&orderId&&order){
+     // check that the token is issued to the user requesting the amend
      handlers._tokens.verifyToken(token,email,function(tokenIsValid){
        if(tokenIsValid){
-         // ...
-         
+         // check that the order is posted by the user requesting the amend
+         _data.read('users',email,function(err,userData){
+           if(!err&&userData&&userData.orders&&(userData.orders.indexOf(orderId)>-1)){
+             if(helpers.verifyOrder(order)){
+               // check for time allowance and status of the order
+               _data.read('orders',orderId,function(err,orderData){
+                 if(!err&&orderData){
+                  if(orderData.status==='accepted' && (Date.now()-orderData.date<5*60*1000)){
+                    // build the updated order object
+                    var updatedOrder = {};
+                    updatedOrder.id = orderId;
+                    updatedOrder.order = order;
+                    updatedOrder.date = Date.now();
+                    updatedOrder.status = 'updated';
+                    _data.update('orders',orderId,updatedOrder,function(err){
+                      if(!err){
+                        callback(200);
+                      } else {
+                        callback(500,{'Error' : 'Failed updating order'});
+                      }
+                    });
+                  } else {
+                    callback(403,{'Error' : 'Order is not amendable'});
+                  }
+                 } else {
+                   callback(404,{'Error' : 'Failed to fetch order data'})
+                 }
+               });
+             } else {
+              callback(403,{'Error' : 'Order update not as required'});
+             }
+           } else {
+            callback(404,{'Error' : 'User/ order missmatch'});
+           }
+         });
        } else {
          callback(403,{'Error' : 'Email/ token missmatch'});
        }
      });
    } else {
-     callback(400,{'Error' : 'Missing or invalid required data - email and token'});
+     callback(400,{'Error' : 'Missing or invalid required data - email,token,order id and order amended'});
    }
 };
 
