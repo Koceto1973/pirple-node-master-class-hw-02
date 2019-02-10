@@ -497,31 +497,52 @@ handlers._orders.get = function(data,callback){ // callback(200,menuData)
    // Check that user token and email are provided
    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
    var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
-   if(token&&email){
-     // check that the token is issued to the user requesting the menu
+   
+   // verify required details
+   if(token && email){
+     // check that the token is issued to the user requesting his orders
      handlers._tokens.verifyToken(token,email,function(tokenIsValid){
        if(tokenIsValid){
-         // read all orders and sellect the requester's ones
-         _data.list('orders',function(err,ordersList){
-          if(!err&&ordersList){
-            let requesterOrders = [];
-            Array.prototype.forEach.call(ordersList, function(el){
-              _data.read('orders',el.replace('.json',''),function(err,orderObject){
-                if(!err&&orderObject){
-                  if(orderObject.email === email) {
-                    requesterOrders.push(JSON.stringify(orderObject));
+         // get the orders files list
+         _data.read('users',email,function(err,userData){
+          if(!err&&userData){
+            // init the user orders container
+            var userOrders = [];
+            var counter = 0;
+            var errorIter = false;
+            // iterate over orders to fill the container with data
+            if (!userData.orders){
+              callback(200,[]);
+            } else {
+              Array.prototype.forEach.call(userData.orders,(el)=>{
+                // get each order details
+                _data.read('orders',el,function(err,orderData){
+                  if(!err&&orderData){
+                    var currentOrder = {};
+                    currentOrder.id = orderData.id;
+                    currentOrder.order = orderData.order;
+                    currentOrder.status = orderData.status;
+                    userOrders.push(currentOrder);
+                  } else {
+                    errorIter = true;
                   }
-                } else {
-                  callback(404,{'Error' : 'Could not fetch the order'});
-                }
+                  counter++;
+  
+                  // build response on successful read
+                  if(counter === userData.orders.length){
+                    if(!errorIter){
+                      callback(200,userOrders);
+                    } else {
+                      callback(500,{'Error' : 'Failed to collect users orders'});
+                    }
+                  }
+                });
               });
-            });
-            // respond with the requesterOrders
-            callback(200,requesterOrders);
+            }
           } else {
-            callback(404,{'Error' : 'Could not fetch the orders list'});
+            callback(404,{'Error' : 'Failed to fetch user data'});
           }
-         });         
+         });
        } else {
          callback(403,{'Error' : 'Email/ token missmatch'});
        }
