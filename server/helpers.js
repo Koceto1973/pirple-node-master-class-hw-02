@@ -53,14 +53,12 @@ helpers.createRandomString = function(strLength){
 // at least one
 // max five per model
 // max twenty total
-helpers.verifyOrder = function(menuObject,order){
+helpers.verifyOrder = function(order){
   let count = 0;
   let acceptable = true;
   Array.prototype.forEach.call(order, (item)=>{
     if( item<0 || item>5 ) { acceptable = false; }
     count +=item;
-
-    console.log(item);
   });
 
   // at least one and max twenty

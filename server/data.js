@@ -101,15 +101,15 @@ data.delete = function(dir,file,callback){
 
 // List all the items in a directory
 data.list = function(dir,callback){
-  fs.readdir(lib.baseDir+dir+'/', function(err,data){
+  fs.readdir(data.baseDir+dir+'/', function(err,_data){
     if(!err && data && data.length > 0){
       var trimmedFileNames = [];
-      data.forEach(function(fileName){
+      _data.forEach(function(fileName){
         trimmedFileNames.push(fileName.replace('.json',''));
       });
       callback(false,trimmedFileNames);
     } else {
-      callback(err,data);
+      callback(err,_data);
     }
   });
 };

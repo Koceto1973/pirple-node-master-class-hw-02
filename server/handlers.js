@@ -392,7 +392,7 @@ handlers.menu = function(data,callback){
 handlers._menu = {};
 
 // Menu - get
-// Required data: email, user token
+// Required data: user email, user token
 // Optional data: none
 handlers._menu.get = function(data,callback){ // callback(200,menuData)
   // Check that user token and email are provided
@@ -433,42 +433,53 @@ handlers.orders = function(data,callback){
 handlers._orders = {};
 
 // Orders - post
-// Required data: email, token, pizza models,quantity per each model
+// Required data: email, token,quantity per each model
 // Optional data: none
 handlers._orders.post = function(data,callback){ // callback(200,ordersObject)
    // Check that user token and email are provided
    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
    var email = typeof(data.payload.email) == 'string' ? data.payload.email.trim() : false;
-   if(token&&email){
+   // Check that order array is provided
+   var order = typeof(data.payload.order) == 'object' && data.payload.order instanceof Array ? data.payload.order : false;
+
+   // verify required details
+   if(token && email && helpers.verifyOrder(order)){
      // check that the token is issued to the user requesting the menu
      handlers._tokens.verifyToken(token,email,function(tokenIsValid){
        if(tokenIsValid){
-          _data.read('menu','menu',function(err,menuObject){
-          // check if menu is fetched ok
-          if(!err&&menuObject){
-            const order = typeof(data.payload.order) == 'object' && data.payload.order instanceof Array ? data.payload.order : false;
-            // check if order is fetched ok
-            if(order){
-              // check order vs menu
-              if(helpers.verifyOrder(menuObject,order)){
-                var orderId = helpers.createRandomString(20);
-                // proper order posting
-                _data.create('orders', orderId,order,function(err,){
+         // get id for the order
+         var orderId = helpers.createRandomString(20);
+         // build the order object
+         var orderObject = {};
+         orderObject.id = orderId;
+         orderObject.order = order;
+         orderObject.date = Date.now();
+         orderObject.status = 'accepted';
+         // post the order
+         _data.create('orders',orderId,orderObject,function(err){
+          if(!err){ // orderObject posted
+            // amend the user data
+            _data.read('users',email,function(err,userData){
+              if(!err&&userData){
+                if(!userData.orders){ 
+                  userData.orders = [];
+                }
+                userData.orders.push(orderId);
+                // update the user data
+                _data.update('users',email,userData,function(err){
                   if(!err){
-                    callback(200,{'orderId': orderId});
+                    callback(200);
                   } else {
-                    callback(500,{'Error' : 'Could not create the order'});
+                    callback(500,{'Error' : 'Failed to update user data'});
                   }
                 });
               } else {
-                callback(400,{'Error' : 'Order found incorrect'});
+                callback(404,{'Error' : 'Failed to fetch user data'});
               }
-            } else {
-              callback(404,{'Error' : 'Could not fetch the order'});
-            }
-           } else {
-            callback(404,{'Error' : 'Could not fetch the menu'});
-           }
+            });
+          } else {
+            callback(500,{'Error' : 'Failed to create new order'});
+          }
          });
        } else {
          callback(403,{'Error' : 'Email/ token missmatch'});
@@ -490,8 +501,27 @@ handlers._orders.get = function(data,callback){ // callback(200,menuData)
      // check that the token is issued to the user requesting the menu
      handlers._tokens.verifyToken(token,email,function(tokenIsValid){
        if(tokenIsValid){
-         // ...
-         
+         // read all orders and sellect the requester's ones
+         _data.list('orders',function(err,ordersList){
+          if(!err&&ordersList){
+            let requesterOrders = [];
+            Array.prototype.forEach.call(ordersList, function(el){
+              _data.read('orders',el.replace('.json',''),function(err,orderObject){
+                if(!err&&orderObject){
+                  if(orderObject.email === email) {
+                    requesterOrders.push(JSON.stringify(orderObject));
+                  }
+                } else {
+                  callback(404,{'Error' : 'Could not fetch the order'});
+                }
+              });
+            });
+            // respond with the requesterOrders
+            callback(200,requesterOrders);
+          } else {
+            callback(404,{'Error' : 'Could not fetch the orders list'});
+          }
+         });         
        } else {
          callback(403,{'Error' : 'Email/ token missmatch'});
        }
