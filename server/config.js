@@ -12,6 +12,7 @@ environments.staging = {
   'envName' : 'staging',
   'hashingSecret' : cnfg.hashingSecret,
   'maxChecks' : 5,
+  'authTokenStripe':cnfg.testAuthTokenStripe,
 };
 
 // Production environment
@@ -20,6 +21,7 @@ environments.production = {
   'envName' : 'production',
   'hashingSecret' : process.env.hashingSecret,
   'maxChecks' : 10,
+  'authTokenStripe':cnfg.AuthTokenStripe,
 };
 
 // Determine which environment was passed as a command-line argument

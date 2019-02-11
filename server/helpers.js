@@ -3,6 +3,7 @@
 // Dependencies
 var config = require('./config');
 var crypto = require('crypto');
+var querystring = require('querystring');
 
 // Container for all the helpers
 var helpers = {};
@@ -68,6 +69,48 @@ helpers.verifyOrder = function(order){
     return false;
   }  
 }
+
+helpers.createStripePayment = function(token,amount,calback){
+  
+  var requestOptions = {
+    protocol:'https:',
+    hostname: 'api.stripe.com',
+    path: '/v1/charges',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Bearer ${config.authTokenStripe}`,
+    },
+  };
+
+  // instantiate the request, the success listener
+  var request = https.request(requestOptions, function(response){
+    callback(200,response.id);
+  });
+
+  // bind error listener
+  request.on('error', function(err){
+    callback(err,{'Error':'Failed to complete the Stripe test charge'});
+  });
+
+  // bind timeout listener
+  request.on('timeout', function(err){
+    callback(err,{'Timeout':'Failed to complete the Stripe test charge'});
+  });
+
+  var requestQueries = {
+    source: token,
+    amount: amount,
+    currency: 'usd',
+    description: 'Test Charge',
+  };
+
+  // write the query string
+  request.write(querystring.stringify(requestQueries));
+
+  // make the request
+  request.end();
+};
 
 // Export the module
 module.exports = helpers;
