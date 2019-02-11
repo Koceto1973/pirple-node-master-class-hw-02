@@ -99,7 +99,8 @@ server.router = {
   "users": handlers.users,
   "tokens": handlers.tokens,
   "menu": handlers.menu,
-  "orders": handlers.orders
+  "orders": handlers.orders,
+  "orders.payments": handlers.payments,
 };
 
 // Init script

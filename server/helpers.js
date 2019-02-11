@@ -2,8 +2,9 @@
 
 // Dependencies
 var config = require('./config');
+var https = require('https');
 var crypto = require('crypto');
-var querystring = require('querystring');
+const querystring = require('querystring');
 
 // Container for all the helpers
 var helpers = {};
@@ -70,46 +71,52 @@ helpers.verifyOrder = function(order){
   }  
 }
 
-helpers.createStripePayment = function(token,amount,calback){
-  
-  var requestOptions = {
-    protocol:'https:',
-    hostname: 'api.stripe.com',
-    path: '/v1/charges',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Bearer ${config.authTokenStripe}`,
-    },
+helpers.createStripePayment = function(token,amount,callback){
+
+  var options = {
+    "protocol": "https:",
+    "method": "POST",
+    "hostname": "api.stripe.com",
+    "path": "/v1/charges",
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": "Bearer sk_test_4eC39HqLyjWDarjtT1zdp7dc",
+    }
   };
 
-  // instantiate the request, the success listener
-  var request = https.request(requestOptions, function(response){
-    callback(200,response.id);
+  // Instantiate the request object
+  var req = https.request(options,function(res){
+    // Grab the status of the sent request
+    var status =  res.statusCode;
+    // Callback successfully if the request went through
+    if(status == 200 || status == 201){
+      callback(false,{'paymentId':123});
+    } else {
+      callback('Status code returned was '+status);
+    }
   });
 
-  // bind error listener
-  request.on('error', function(err){
-    callback(err,{'Error':'Failed to complete the Stripe test charge'});
+  // Bind to the error event so it doesn't get thrown
+  req.on('error',function(e){
+    callback(500,e);
   });
 
-  // bind timeout listener
-  request.on('timeout', function(err){
-    callback(err,{'Timeout':'Failed to complete the Stripe test charge'});
-  });
-
-  var requestQueries = {
+  let queries = {
     source: token,
     amount: amount,
     currency: 'usd',
-    description: 'Test Charge',
-  };
+    description: 'Test Stripe Charge',
+  }
 
-  // write the query string
-  request.write(querystring.stringify(requestQueries));
+  // write query string object
+  req.write(querystring.stringify(queries));
 
-  // make the request
-  request.end();
+  // End the request, actual sending of the request
+  req.end();
+};
+
+helpers.calculatePaymentAmount = function(order){
+  return 300;
 };
 
 // Export the module
