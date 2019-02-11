@@ -73,7 +73,7 @@ helpers.verifyOrder = function(order){
 
 helpers.createStripePayment = function(token,amount,callback){
 
-  var options = {
+  var requestOptions = {
     "protocol": "https:",
     "method": "POST",
     "hostname": "api.stripe.com",
@@ -85,15 +85,27 @@ helpers.createStripePayment = function(token,amount,callback){
   };
 
   // Instantiate the request object
-  var req = https.request(options,function(res){
-    // Grab the status of the sent request
-    var status =  res.statusCode;
-    // Callback successfully if the request went through
-    if(status == 200 || status == 201){
-      callback(false,{'paymentId':123});
-    } else {
-      callback('Status code returned was '+status);
-    }
+  var req = https.request(requestOptions,function(res){
+
+    var chunks = [];
+    
+    res.on("data", function (chunk) {
+      chunks.push(chunk);
+    });
+
+    res.on("end", function () {
+      // get the payment id
+      var id = JSON.parse(Buffer.concat(chunks)).id;
+
+      // Grab the status of the sent request
+      var status =  res.statusCode;
+      // Callback successfully if the request went through
+      if(status == 200 || status == 201){
+        callback(false,{'paymentId':id});
+      } else {
+        callback(status,{'Error':'Failed processing the Stripe payment correctly'});
+      }
+    });    
   });
 
   // Bind to the error event so it doesn't get thrown
