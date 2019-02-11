@@ -730,7 +730,7 @@ handlers._payments.post = function(data,callback){ // callback(200,paymentId)
                      // update the order in the storage
                      _data.update('orders',orderId,updaterOrder,function(err){
                        if(!err){
-                         callback(200,{'payment Id':paymentData.paymentId,'payment amount':amount})
+                         callback(200,{'payment Id':paymentData.paymentId,'payment amount in USD':amount/100})
                        } else {
                          callback(500,{'Error':'Payment completed, order status updated failed'});
                        }

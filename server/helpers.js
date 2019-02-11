@@ -71,6 +71,7 @@ helpers.verifyOrder = function(order){
   }  
 }
 
+// test payment using dummy user card details and dummy stripe auth key
 helpers.createStripePayment = function(token,amount,callback){
 
   var requestOptions = {
@@ -127,8 +128,18 @@ helpers.createStripePayment = function(token,amount,callback){
   req.end();
 };
 
+// calculates the ttl amount in cents, based on ordered pizzas and their prices
 helpers.calculatePaymentAmount = function(order){
-  return 300;
+  var prices = [2.90,3.60,3.30,3.70,2.80,4.20,3.40,3.50,3.20,3.60,4.20,3.50,3.60,4.30,4.00,3.90,4.20];
+  var amount = 0;
+  var index = 0;
+
+  Array.prototype.forEach.call(order,(el)=>{
+    amount += el*prices[index];
+    index++;
+  });
+  
+  return Math.ceil(amount*100);
 };
 
 // Export the module
