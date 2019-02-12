@@ -53,5 +53,38 @@ II. Tokens management: CRUD functionality is covered, use /tokens route
     // Optional data: none
     // on success response status code should be 200
 
-
+III. Orders management: CRUD functionality is covered, use /orders and /menu routes
+  0. get the menu:
+    // get request to /menu
+    // Required headers data: email( valid string, already registered as email in I.1), token ( valid string, issued in II.1)
+    // on success response status code should be 200, 
+       and menu details in JSON with 17 properties, formatted <pizza model>:<price in usd>
+  1. create new order:
+    // post request to /orders
+    // Required payload data: email( valid string, already registered as email in I.1), 
+      order ( valid array of 17( number of pizzas in menu ) integers, representing ordered qtty of each pizza model)
+      for example: "order":[ 0,1,3,0,0,0,3,0,0,0,0,2,0,0,0,0,0 ]
+      order limitations: order min 1, max 20, max 5 per pizza model
+    // Required headers: Content-Type: application/json
+    // Required headers: id of a valid user token
+    // on success response status code should be 200, and order id details in JSON, status is 'accepted'
+  2. get order(s) data: 
+    // get request to /orders
+    // Required headers data: token, email
+    // Optional headers data: order id, to get details of only particular order of many orders
+    // on success response status code should be 200, and order(s) details in JSON
+  3. amend order details: allowed only once, up to 5 min after order is accepted first 
+    // put request to /orders
+    // Required payload data: email( valid string, already registered as email in I.1), 
+      order ( valid array of 17( number of pizzas in menu ) integers, representing ordered qtty of each pizza model)
+      for example: "order":[ 0,1,3,0,0,0,3,0,0,0,0,2,0,0,0,0,0 ]
+      order limitations: order min 1, max 20, max 5 per pizza model
+    // Required headers: Content-Type: application/json
+    // Required headers: id of a valid user token, id of a valid order with status 'accepted'
+    // on success response status code should be 200, and order status amended to 'updated'
+  4. delete order: 
+    // delete request to /orders
+    // Required querystring data: id of the order to be deleted, with status 'accepted' or 'updated'
+    // Required headers: id of a valid user token, user email
+    // on success response status code should be 200
   
