@@ -69,7 +69,7 @@ helpers.verifyOrder = function(order){
   } else {
     return false;
   }  
-}
+};
 
 // test payment using dummy user card details and dummy stripe auth key
 helpers.createStripePayment = function(token,amount,callback){
@@ -140,6 +140,62 @@ helpers.calculatePaymentAmount = function(order){
   });
   
   return Math.ceil(amount*100);
+};
+
+// email notification on completed pizza order payment
+helpers.createMailgunNotification = function(email, notification){
+  var requestOptions = {
+    "protocol": "https:",
+    "method": "POST",
+    "hostname": "api.mailgun.net",
+    "path": `/v3/${config.domainNameMailgun}/messages`,
+    "headers": {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Basic ${config.apiKeyMailgun}`,
+    }
+  };
+
+  // Instantiate the request object
+  var req = https.request(requestOptions,function(res){
+
+    var chunks = [];
+    
+    res.on("data", function (chunk) {
+      chunks.push(chunk);
+    });
+
+    res.on("end", function () {
+      // get the payment id
+      var id = JSON.parse(Buffer.concat(chunks)).id;
+
+      // Grab the status of the sent request
+      var status =  res.statusCode;
+      // Callback successfully if the request went through
+      if(status == 200 || status == 201){
+        callback(false,{'Success':"Check your email for payment details"});
+      } else {
+        callback(status,{'Error':'Failed to send email notification for your payment'});
+      }
+    });    
+  });
+
+  // Bind to the error event so it doesn't get thrown
+  req.on('error',function(e){
+    callback(500,e);
+  });
+
+  let queries = {
+    from: `mailgun@${config.domainNameMailgun}`,
+    to: email,
+    subject: 'pizza order payment',
+    text: notification,
+  }
+
+  // write query string object
+  req.write(querystring.stringify(queries));
+
+  // End the request, actual sending of the request
+  req.end();
 };
 
 // Export the module

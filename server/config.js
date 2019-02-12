@@ -13,6 +13,8 @@ environments.staging = {
   'hashingSecret' : cnfg.hashingSecret,
   'maxChecks' : 5,
   'authTokenStripe':cnfg.testAuthTokenStripe,
+  'apiKeyMailgun':cnfg.apiKeyMailgun,
+  'domainNameMailgun':cnfg.domainNameMailgun,
 };
 
 // Production environment
@@ -22,6 +24,8 @@ environments.production = {
   'hashingSecret' : process.env.hashingSecret,
   'maxChecks' : 10,
   'authTokenStripe':cnfg.AuthTokenStripe,
+  'apiKeyMailgun':cnfg.apiKeyMailgun,
+  'domainNameMailgun':cnfg.domainNameMailgun,
 };
 
 // Determine which environment was passed as a command-line argument
