@@ -730,7 +730,16 @@ handlers._payments.post = function(data,callback){ // callback(200,paymentId)
                      // update the order in the storage
                      _data.update('orders',orderId,updaterOrder,function(err){
                        if(!err){
-                         callback(200,{'payment Id':paymentData.paymentId,'payment amount in USD':amount/100})
+                        // callback(200,{'payment Id':paymentData.paymentId,'payment amount in USD':amount/100})
+                        // notify the client by email for the payment
+                        var notification = `By invoice ${paymentData.paymentId} you have payed successfully ${amount/100} USD for your pizzas order ${orderId}`;
+                        helpers.createMailgunNotification(email,notification,function(err,mailData){
+                          if(!err&&mailData){
+                            callback(200,mailData);
+                          } else {
+                            callback(500,{'Error':err});
+                          }
+                        });
                        } else {
                          callback(500,{'Error':'Payment completed, order status updated failed'});
                        }

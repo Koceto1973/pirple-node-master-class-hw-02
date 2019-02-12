@@ -143,7 +143,7 @@ helpers.calculatePaymentAmount = function(order){
 };
 
 // email notification on completed pizza order payment
-helpers.createMailgunNotification = function(email, notification){
+helpers.createMailgunNotification = function(email, notification, callback){
   var requestOptions = {
     "protocol": "https:",
     "method": "POST",
@@ -151,7 +151,7 @@ helpers.createMailgunNotification = function(email, notification){
     "path": `/v3/${config.domainNameMailgun}/messages`,
     "headers": {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Authorization": `Basic ${config.apiKeyMailgun}`,
+      "Authorization": 'Basic ' + Buffer.from('api' + ':' + config.apiKeyMailgun).toString('base64'),
     }
   };
 
@@ -165,9 +165,6 @@ helpers.createMailgunNotification = function(email, notification){
     });
 
     res.on("end", function () {
-      // get the payment id
-      var id = JSON.parse(Buffer.concat(chunks)).id;
-
       // Grab the status of the sent request
       var status =  res.statusCode;
       // Callback successfully if the request went through
@@ -186,7 +183,7 @@ helpers.createMailgunNotification = function(email, notification){
 
   let queries = {
     from: `mailgun@${config.domainNameMailgun}`,
-    to: email,
+    to: 'teamk.developers@gmail.com',
     subject: 'pizza order payment',
     text: notification,
   }
