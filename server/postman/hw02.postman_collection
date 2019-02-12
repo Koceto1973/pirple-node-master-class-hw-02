@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "aedf7f97-c8dd-4b4f-94b8-6c5f4a1d839c",
-		"name": "hw02",
+		"_postman_id": "a6008d46-c21f-472f-9e1b-842e03575710",
+		"name": "hw02 Copy",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -726,6 +726,64 @@
 						{
 							"key": "id",
 							"value": "{{orderId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "API payment",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "token",
+						"value": "{{tokenId}}",
+						"type": "text"
+					},
+					{
+						"key": "email",
+						"value": "{{email}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{url.https}}/orders.payments?id={{orderId}}&source={{StripePaymentToken}}&currency=usd&description=test pizzas payment",
+					"host": [
+						"{{url.https}}"
+					],
+					"path": [
+						"orders.payments"
+					],
+					"query": [
+						{
+							"key": "id",
+							"value": "{{orderId}}"
+						},
+						{
+							"key": "source",
+							"value": "{{StripePaymentToken}}"
+						},
+						{
+							"key": "currency",
+							"value": "usd"
+						},
+						{
+							"key": "description",
+							"value": "test pizzas payment"
 						}
 					]
 				}
