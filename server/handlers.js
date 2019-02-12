@@ -165,7 +165,7 @@ handlers._users.put = function(data,callback){ // callback(200)
 
 // Required data: email, token
 // also Cleanup old orders associated with the user
-handlers._users.delete = function(data,callback){
+handlers._users.delete = function(data,callback){ // callback(200);
   // Check that email number is valid
   var email = typeof(data.queryStringObject.email) == 'string' ? data.queryStringObject.email.trim() : false;
   if(email){
